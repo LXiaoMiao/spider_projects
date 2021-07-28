@@ -37,15 +37,8 @@ Tags = {
 class QuDuoDuo:
     def __init__(self):
         self.search_url = 'https://agm-api.hifiveai.com/search'
-        self.file_dir: Path = Path('.').joinpath('music')
-        self.confirm_file_dir()
 
-    def confirm_file_dir(self):
-        if self.file_dir.exists():
-            return
-        os.mkdir(self.file_dir)
-
-    def req_info(self, mode: str = "快乐", page: int = 1, size: int = 10) -> List:
+    def req(self, mode: str = "快乐", page: int = 1, size: int = 10) -> List:
         response: Response = requests.post(self.search_url, headers=Headers, data=json.dumps({
             'newTags': Tags[mode],
             'page': page,
@@ -54,24 +47,33 @@ class QuDuoDuo:
         return response.json().get('data', {'list': []}).get('list')
 
     def crawling(self, mode: str = "快乐", page: int = 1):
-        song_list: List = self.req_info(mode, page)
+        filepath = self.confirm_file_dir(mode)
+        song_list: List = self.req(mode, page)
         song_info = self.extract(song_list)
-        self.save(song_info)
-        logging.info(f"QuDuoDuo page {page} is saved")
+        self.save(song_info, filepath)
+        logging.info(f"QuDuoDuo-{mode} page {page} is saved")
 
-    def save(self, song_info: Iterable):
-        # extract the first 25 seconds of the song and save
+    @staticmethod
+    def save(song_info: Iterable, filepath: Path):
+        # extract the first 15 seconds of the song and save
         for song in song_info:
             try:
                 file_name = f"{song.music_name}.mp3"
-                with open(self.file_dir.joinpath(file_name), 'wb') as f:
+                with open(filepath.joinpath(file_name), 'wb') as f:
                     f.write(song.music_content)
             except OSError:
                 logging.error(f'{song.music_name} ---- Filename Error')
             else:
-                song = AudioSegment.from_mp3(self.file_dir.joinpath(file_name))
+                song = AudioSegment.from_mp3(filepath.joinpath(file_name))
                 song = song[:15000]
-                song.export(self.file_dir.joinpath(file_name))
+                song.export(filepath.joinpath(file_name))
+
+    @staticmethod
+    def confirm_file_dir(filename: str) -> Path:
+        file_dir: Path = Path('.').joinpath(filename)
+        if not file_dir.exists():
+            os.mkdir(file_dir)
+        return file_dir
 
     @staticmethod
     def extract(songs: List) -> List[MusicInfo]:
@@ -90,5 +92,7 @@ class QuDuoDuo:
 
 if __name__ == '__main__':
     spider = QuDuoDuo()
-    for i in range(1, 2):
+    for i in range(1, 3):
         spider.crawling(mode="快乐", page=i)
+    for i in range(1, 3):
+        spider.crawling(mode="失望", page=i)
