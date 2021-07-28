@@ -15,6 +15,9 @@ MusicInfo = namedtuple('MusicInfo', [
     'music_name',
     'music_content'
 ])
+Headers = {
+    'content-type': 'application/json;charset=UTF-8'
+}
 Tags = {
     '快乐': '442',
     '愉快': '443',
@@ -32,12 +35,8 @@ Tags = {
 
 
 class QuDuoDuo:
-    def __init__(self, tag):
+    def __init__(self):
         self.search_url = 'https://agm-api.hifiveai.com/search'
-        self.headers = {
-            'content-type': 'application/json;charset=UTF-8'
-        }
-        self.mode = Tags[tag]
         self.file_dir: Path = Path('.').joinpath('music')
         self.confirm_file_dir()
 
@@ -46,16 +45,16 @@ class QuDuoDuo:
             return
         os.mkdir(self.file_dir)
 
-    def req_info(self, page: int = 1, size: int = 10) -> List:
-        response: Response = requests.post(self.search_url, headers=self.headers, data=json.dumps({
-            'newTags': self.mode,
+    def req_info(self, mode: str = "快乐", page: int = 1, size: int = 10) -> List:
+        response: Response = requests.post(self.search_url, headers=Headers, data=json.dumps({
+            'newTags': Tags[mode],
             'page': page,
             'size': size
         }))
-        return response.json().get('data').get('list')
+        return response.json().get('data', {'list': []}).get('list')
 
-    def crawling(self, page: int = 1):
-        song_list: List = self.req_info(page)
+    def crawling(self, mode: str = "快乐", page: int = 1):
+        song_list: List = self.req_info(mode, page)
         song_info = self.extract(song_list)
         self.save(song_info)
         logging.info(f"QuDuoDuo page {page} is saved")
@@ -90,6 +89,6 @@ class QuDuoDuo:
 
 
 if __name__ == '__main__':
-    spider = QuDuoDuo('快乐')
+    spider = QuDuoDuo()
     for i in range(1, 2):
-        spider.crawling(i)
+        spider.crawling(mode="快乐", page=i)
