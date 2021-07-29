@@ -92,7 +92,7 @@ class QuDuoDuo:
 
 if __name__ == '__main__':
     spider = QuDuoDuo()
-    for i in range(1, 3):
+    for i in range(1, 11):
         spider.crawling(mode="快乐", page=i)
-    for i in range(1, 3):
-        spider.crawling(mode="失望", page=i)
+    for j in range(1, 11):
+        spider.crawling(mode="失望", page=j)
